@@ -1,0 +1,8 @@
+[workspace]
+members = [
+    "mono_sys",
+    "mono_rt",
+    #
+    "test.d/tbin",
+    "test.d/tlib",
+]

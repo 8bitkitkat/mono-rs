@@ -1,0 +1,11 @@
+[package]
+name = "mono_rt"
+version = "0.1.0"
+authors = ["Ketan C.S. Reynolds <ketan.cs.reynolds@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+mono_sys = { path = "../mono_sys" }
+anyhow = "1.0"
