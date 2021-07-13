@@ -107,7 +107,8 @@ impl Domain {
         unsafe { self.add_internal_call_raw(path, f as *const _) }
     }
 
-    pub fn open_assembly(&self, path: &Path) -> Result<Assembly> {
+    pub fn open_assembly<P: AsRef<Path>>(&self, path: P) -> Result<Assembly> {
+        let path = path.as_ref();
         let path_cstr = osstr_to_cstring(path.as_os_str())?;
 
         let ptr =
