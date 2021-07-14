@@ -4,4 +4,6 @@
 // FIXME
 #![allow(improper_ctypes)]
 
-include!("bindings.rs");
+// include!("bindings.rs");
+pub mod bindings;
+pub use bindings::*;

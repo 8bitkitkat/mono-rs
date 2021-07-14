@@ -1,4 +1,4 @@
-use crate::{Domain, MonoObject};
+use crate::{Domain, MonoObject, MonoType};
 use std::ffi::{c_void, CString};
 use std::marker::PhantomData;
 use std::ptr::{null_mut, NonNull};
@@ -166,31 +166,37 @@ impl Drop for MonoClassField {
 }
 
 impl MonoClassField {
-    pub unsafe fn get_data(&self) -> *const i8 {
-        sys::mono_field_get_data(self.raw.as_ptr())
+    pub fn get_type(&self) -> Option<MonoType> {
+        let ptr = unsafe { sys::mono_field_get_type(self.raw.as_ptr()) };
+        let raw = NonNull::new(ptr)?;
+        Some(MonoType { raw })
     }
 
-    pub unsafe fn get_data_mut(&self) -> *mut i8 {
-        sys::mono_field_get_data(self.raw.as_ptr()) as *mut i8
-    }
+    // pub unsafe fn get_data(&self) -> *const i8 {
+    //     sys::mono_field_get_data(self.raw.as_ptr())
+    // }
 
-    pub unsafe fn cast<T>(&self) -> *const T {
-        self.get_data() as *const T
-    }
+    // pub unsafe fn get_data_mut(&self) -> *mut i8 {
+    //     sys::mono_field_get_data(self.raw.as_ptr()) as *mut i8
+    // }
 
-    pub unsafe fn cast_mut<T>(&mut self) -> *mut T {
-        self.get_data_mut() as *mut T
-    }
+    // pub unsafe fn cast<T>(&self) -> *const T {
+    //     self.get_data() as *const T
+    // }
 
-    pub unsafe fn cast_deref<T>(&self) -> &T {
-        &*self.cast()
-    }
+    // pub unsafe fn cast_mut<T>(&mut self) -> *mut T {
+    //     self.get_data_mut() as *mut T
+    // }
 
-    pub unsafe fn cast_deref_mut<T>(&mut self) -> &mut T {
-        &mut *self.cast_mut()
-    }
+    // pub unsafe fn cast_deref<T>(&self) -> &T {
+    //     &*self.cast()
+    // }
 
-    pub unsafe fn as_obj(&mut self) -> MonoObject {
-        MonoObject::new(self.cast_mut())
-    }
+    // pub unsafe fn cast_deref_mut<T>(&mut self) -> &mut T {
+    //     &mut *self.cast_mut()
+    // }
+
+    // pub unsafe fn as_obj(&mut self) -> MonoObject {
+    //     MonoObject::new(self.cast_mut())
+    // }
 }

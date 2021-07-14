@@ -8,7 +8,7 @@ pub mod domain;
 pub mod obj;
 
 pub use assembly::{Assembly, Image};
-pub use class::{Method, MethodSignature, MonoClass};
+pub use class::{Method, MethodSignature, MonoClass, MonoClassField};
 pub use domain::Domain;
 pub use obj::*;
 

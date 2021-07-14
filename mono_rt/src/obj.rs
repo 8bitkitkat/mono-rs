@@ -140,7 +140,7 @@ impl MonoString {
 
 #[repr(transparent)]
 pub struct MonoType {
-    pub(crate) ptr: *mut sys::MonoType,
+    pub(crate) raw: NonNull<sys::MonoType>,
 }
 
 impl MonoType {
@@ -148,11 +148,26 @@ impl MonoType {
     //     Self { ptr }
     // }
 
-    pub fn as_ptr(&self) -> *mut sys::MonoType {
-        self.ptr
+    // pub fn as_ptr(&self) -> *mut sys::MonoType {
+    //     self.ptr
+    // }
+
+    pub fn is_void(&self) -> bool {
+        let x = unsafe { sys::mono_type_is_void(self.raw.as_ptr()) };
+        x != 0
+    }
+
+    /// (size, alignment)
+    pub fn size(&self) -> (i32, i32) {
+        let mut alignment: i32 = 0;
+        let size = unsafe { sys::mono_type_size(self.raw.as_ptr(), (&mut alignment) as *mut i32) };
+
+        (size, alignment)
     }
 
     pub fn get_class(&self) -> MonoClass {
-        unsafe { MonoClass::new(NonNull::new(sys::mono_type_get_class(self.ptr)).unwrap()) }
+        unsafe {
+            MonoClass::new(NonNull::new(sys::mono_type_get_class(self.raw.as_ptr())).unwrap())
+        }
     }
 }
