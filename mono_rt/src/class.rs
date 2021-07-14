@@ -14,6 +14,15 @@ impl MonoClass {
         Self { raw }
     }
 
+    pub fn get_field_from_name(&self, name: &str) -> Option<MonoClassField> {
+        let cstr = CString::new(name).ok()?;
+
+        let ptr = unsafe { sys::mono_class_get_field_from_name(self.raw.as_ptr(), cstr.as_ptr()) };
+        let raw = NonNull::new(ptr)?;
+
+        Some(MonoClassField { raw })
+    }
+
     pub fn get_method_from_name(&self, name: &str, param_count: i32) -> Option<Method> {
         let name_cstr = CString::new(name).ok()?;
 
@@ -140,5 +149,48 @@ impl MethodSignature<'_> {
 
     pub fn param_count(&self) -> u32 {
         unsafe { sys::mono_signature_get_param_count(self.raw.as_ptr()) }
+    }
+}
+
+#[repr(transparent)]
+pub struct MonoClassField {
+    pub(crate) raw: NonNull<sys::MonoClassField>,
+}
+
+impl Drop for MonoClassField {
+    fn drop(&mut self) {
+        unsafe {
+            sys::mono_free(self.raw.as_ptr() as *mut _);
+        }
+    }
+}
+
+impl MonoClassField {
+    pub unsafe fn get_data(&self) -> *const i8 {
+        sys::mono_field_get_data(self.raw.as_ptr())
+    }
+
+    pub unsafe fn get_data_mut(&self) -> *mut i8 {
+        sys::mono_field_get_data(self.raw.as_ptr()) as *mut i8
+    }
+
+    pub unsafe fn cast<T>(&self) -> *const T {
+        self.get_data() as *const T
+    }
+
+    pub unsafe fn cast_mut<T>(&mut self) -> *mut T {
+        self.get_data_mut() as *mut T
+    }
+
+    pub unsafe fn cast_deref<T>(&self) -> &T {
+        &*self.cast()
+    }
+
+    pub unsafe fn cast_deref_mut<T>(&mut self) -> &mut T {
+        &mut *self.cast_mut()
+    }
+
+    pub unsafe fn as_obj(&mut self) -> MonoObject {
+        MonoObject::new(self.cast_mut())
     }
 }
