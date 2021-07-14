@@ -157,14 +157,6 @@ pub struct MonoClassField {
     pub(crate) raw: NonNull<sys::MonoClassField>,
 }
 
-impl Drop for MonoClassField {
-    fn drop(&mut self) {
-        unsafe {
-            sys::mono_free(self.raw.as_ptr() as *mut _);
-        }
-    }
-}
-
 impl MonoClassField {
     pub fn get_type(&self) -> Option<MonoType> {
         let ptr = unsafe { sys::mono_field_get_type(self.raw.as_ptr()) };
