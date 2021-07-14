@@ -55,6 +55,12 @@ impl MonoClass {
         }
         methods
     }
+
+    pub fn get_type(&self) -> MonoType {
+        let ptr = unsafe { sys::mono_class_get_type(self.raw.as_ptr()) };
+        let raw = NonNull::new(ptr).unwrap();
+        MonoType { raw }
+    }
 }
 
 #[non_exhaustive]
@@ -158,10 +164,10 @@ pub struct MonoClassField {
 }
 
 impl MonoClassField {
-    pub fn get_type(&self) -> Option<MonoType> {
+    pub fn get_type(&self) -> MonoType {
         let ptr = unsafe { sys::mono_field_get_type(self.raw.as_ptr()) };
-        let raw = NonNull::new(ptr)?;
-        Some(MonoType { raw })
+        let raw = NonNull::new(ptr).unwrap(); // should not fail
+        MonoType { raw }
     }
 
     // pub unsafe fn get_data(&self) -> *const i8 {

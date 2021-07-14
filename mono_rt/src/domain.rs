@@ -1,4 +1,6 @@
-use crate::{osstr_to_cstring, Assembly, MonoArray, MonoClass, MonoObject, MonoString};
+use crate::{
+    osstr_to_cstring, Assembly, MonoArray, MonoClass, MonoClassField, MonoObject, MonoString,
+};
 use anyhow::{anyhow, Result};
 use std::ffi::{c_void, CString};
 use std::path::Path;
@@ -136,6 +138,24 @@ impl Domain {
         let cstr = CString::new(str)?;
         let ptr = unsafe { mono_sys::mono_string_new(self.raw.as_ptr(), cstr.as_ptr()) };
         Ok(MonoString::new(ptr))
+    }
+
+    pub unsafe fn value_box(
+        &self,
+        class: &MonoClass,
+        value: *mut std::os::raw::c_void,
+    ) -> MonoObject {
+        let ptr = sys::mono_value_box(self.raw.as_ptr(), class.raw.as_ptr(), value);
+        MonoObject::new(ptr)
+    }
+
+    pub unsafe fn field_get_value_object(
+        &self,
+        field: &MonoClassField,
+        obj: &MonoObject,
+    ) -> MonoObject {
+        let ptr = sys::mono_field_get_value_object(self.raw.as_ptr(), field.raw.as_ptr(), obj.ptr);
+        MonoObject::new(ptr)
     }
 }
 

@@ -1,5 +1,8 @@
 use crate::MonoClass;
+use crate::MonoClassField;
 use std::ffi::c_void;
+use std::ffi::CString;
+use std::ptr::null_mut;
 use std::ptr::NonNull;
 
 #[repr(transparent)]
@@ -16,14 +19,16 @@ impl Clone for MonoObject {
 
 impl std::fmt::Display for MonoObject {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", unsafe {
-            self.to_mono_string(std::ptr::null_mut())
-        })
+        write!(f, "{}", unsafe { self.to_mono_string(None) })
     }
 }
 
 impl MonoObject {
     pub(crate) fn new(ptr: *mut sys::MonoObject) -> Self {
+        Self { ptr }
+    }
+
+    pub unsafe fn from_ptr(ptr: *mut sys::MonoObject) -> Self {
         Self { ptr }
     }
 
@@ -60,9 +65,18 @@ impl MonoObject {
         unsafe { sys::mono_object_get_size(self.ptr) }
     }
 
-    pub unsafe fn to_mono_string(&self, exc: *mut *mut sys::MonoObject) -> MonoString {
-        let ptr = sys::mono_object_to_string(self.ptr, exc);
+    // pub unsafe fn to_mono_string(&self, exc: *mut *mut sys::MonoObject) -> MonoString {
+    //     let ptr = sys::mono_object_to_string(self.ptr, exc);
+    //     MonoString::new(ptr)
+    // }
+
+    pub unsafe fn to_mono_string(&self, exc: Option<*mut *mut sys::MonoObject>) -> MonoString {
+        let ptr = sys::mono_object_to_string(self.ptr, exc.unwrap_or(null_mut()));
         MonoString::new(ptr)
+    }
+
+    pub unsafe fn get_field_value(&self, field: &MonoClassField, value: *mut std::os::raw::c_void) {
+        sys::mono_field_get_value(self.ptr, field.raw.as_ptr(), value)
     }
 }
 
@@ -96,6 +110,16 @@ impl MonoArray {
 #[repr(transparent)]
 pub struct MonoString {
     pub(crate) ptr: *mut sys::MonoString,
+}
+
+impl std::fmt::Debug for MonoString {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if f.alternate() {
+            write!(f, "{:#?}", self.to_string())
+        } else {
+            write!(f, "{:?}", self.to_string())
+        }
+    }
 }
 
 impl std::fmt::Display for MonoString {
@@ -152,17 +176,23 @@ impl MonoType {
     //     self.ptr
     // }
 
+    pub fn name(&self) -> String {
+        unsafe {
+            let ptr = sys::mono_type_get_name(self.raw.as_ptr());
+            let cstr = CString::from_raw(ptr);
+            cstr.to_str().unwrap().to_string()
+        }
+    }
+
     pub fn is_void(&self) -> bool {
         let x = unsafe { sys::mono_type_is_void(self.raw.as_ptr()) };
         x != 0
     }
 
-    /// (size, alignment)
-    pub fn size(&self) -> (i32, i32) {
+    pub fn size(&self) -> std::alloc::Layout {
         let mut alignment: i32 = 0;
         let size = unsafe { sys::mono_type_size(self.raw.as_ptr(), (&mut alignment) as *mut i32) };
-
-        (size, alignment)
+        std::alloc::Layout::from_size_align(size as usize, alignment as usize).unwrap()
     }
 
     pub fn get_class(&self) -> MonoClass {
